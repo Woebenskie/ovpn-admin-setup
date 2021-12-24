@@ -1,0 +1,16 @@
+[Unit]
+Description=ovpn-admin Daemon
+After=network.target
+
+[Service]
+User=root
+Group=root
+
+Type=simple
+ExecStart=/etc/openvpn/easy-rsa/ovpn-admin-run.sh
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
