@@ -1,0 +1,49 @@
+apt purge openvpn -y 
+
+rm -r /etc/openvpn/
+apt install openvpn easy-rsa -y
+
+cp -r /usr/share/easy-rsa /etc/openvpn/
+cd /etc/openvpn/easy-rsa
+mv vars.example vars
+
+echo 'export KEY_COUNTRY="NL"' >> vars
+echo 'export KEY_PROVINCE="NH"' >> vars
+echo 'export KEY_CITY="Amsterdam"' >> vars
+echo 'export KEY_ORG="SvenVisser"' >> vars
+echo 'export KEY_EMAIL="info@svenvisser.eu"' >> vars
+echo 'export KEY_OU="OpenVPN"' >> vars
+
+cat vars
+
+./easyrsa init-pki
+
+./easyrsa build-ca nopass svenvisser
+
+./easyrsa gen-req server nopass
+
+./easyrsa sign-req server server
+
+./easyrsa gen-dh
+
+openvpn --genkey --secret ta.key
+cp ta.key /etc/openvpn/
+cp pki/ca.crt /etc/openvpn/
+cp pki/private/server.key /etc/openvpn/
+cp pki/issued/server.crt /etc/openvpn/
+cp pki/dh.pem /etc/openvpn/
+cp ta.key ./pki/
+wget https://raw.githubusercontent.com/Woebenskie/ovpn-admin-setup/main/server.conf -O /etc/openvpn/server.conf
+wget https://raw.githubusercontent.com/Woebenskie/ovpn-admin-setup/main/ovpn-admin-run.sh -O /etc/openvpn/easy-rsa/ovpn-admin-run.sh 
+wget https://raw.githubusercontent.com/Woebenskie/ovpn-admin-setup/main/ovpn-admin.service -O /lib/systemd/system/ovpn-admin.service
+wget https://github.com/flant/ovpn-admin/releases/download/1.7.5/ovpn-admin-linux-amd64.tar.gz -O /etc/openvpn/easy-rsa/ovpn-admin-linux-amd64.tar.gz
+
+tar xzf /etc/openvpn/easy-rsa/ovpn-admin-linux-amd64.tar.gz
+rm /etc/openvpn/easy-rsa/ovpn-admin-linux-amd64.tar.gz
+chmod +x /etc/openvpn/easy-rsa/ovpn-admin-run.sh
+ufw allow 8080/tcp
+systemctl restart openvpn@server
+systemctl enable ovpn-admin.service
+systemctl start ovpn-admin.service
+systemctl status ovpn-admin.service
+hostname
